@@ -18,10 +18,10 @@ class SlugHelper {
     private $use_cache = false;
 	
 	
-    private $model = "questions";
-    private $id_field = "slug";
-    private $slug_field = "slug";
-    private $id = false;
+    public $model = YOUR_TABLE_NAME;
+    public $id_field = "id";
+    public $slug_field = "slug";
+    public $id = false;
 
     private $vnmToneChars=array("à","á","ạ","ả","ã","â","ầ","ấ","ậ","ẩ","ẫ","ă","ằ","ắ","ặ","ẳ","ẵ",
                                 "è","é","ẹ","ẻ","ẽ","ê","ề","ế","ệ","ể","ễ","ì","í","ị","ỉ","ĩ",
@@ -56,8 +56,10 @@ class SlugHelper {
                                 "Y","Y","Y","Y","Y",
                                 "D","e","u","a");
 
-    public function __construct() {
-
+    public function __construct($separator = "_", $max_length = null, $use_cache = false) {
+		$this->separator = $separator;
+		$this->max_length = $max_length;
+		$this->use_cache = $use_cache;
     }
 
     private function exceptVnmToneMarks($source) {
@@ -84,7 +86,7 @@ class SlugHelper {
             return $slug;
         }
 		
-        $list = $this->getExistingSlugs($slug);		
+        $list = $this->getExistingSlugs($slug);
         if (empty($list) || !in_array($slug, $list) ||
             ($this->id && array_key_exists($this->id, $list) && $list[$this->id] === $slug)) {
             return $slug;
@@ -101,9 +103,14 @@ class SlugHelper {
         return $slug . $increment;
     }
 
+	/**
+	 * Get list of existing slugs in your DB.
+	 * This code is implemented with Laravel.
+	 * You can change this for your specific environment.
+	 */
     private function getExistingSlugs($slug) {
-        $query = DB::table($this->model)->where($this->slug_field, 'LIKE', $slug.'%');
-        $list = $query->lists($this->slug_field, $this->id_field);
+        $query = DB::table($this->model)->where($this->slug_field, 'LIKE', $slug.'%')
+											->lists($this->slug_field, $this->id_field);
         return $list;
     }
 
