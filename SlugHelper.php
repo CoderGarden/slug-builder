@@ -44,12 +44,36 @@ class SlugHelper {
     	private $use_cache = false;
 	private $cache_key = "SLUG_KEY";
 	
-	
+	/*
+	 * The related model (table in DB) which holds slug fields.
+	 * 
+	 * Model (bảng dữ liệu trong DB) có lưu trữ slug
+	 * /
     	public $model = YOUR_TABLE_NAME;
+	/*
+	 * The related id field of model.
+	 * 
+	 * Tên của trường id (định danh cho các bản ghi) của model.
+	 * /
     	public $id_field = "id";
+	/*
+	 * The related slug field of model.
+	 * 
+	 * Tên của trường slug (trường lưu trữ slug) của model.
+	 * /
     	public $slug_field = "slug";
+    	/*
+	 * Id of existing model.
+	 * 
+	 * Id của bản ghi đang lưu trữ slug.
+	 * /
     	public $id = false;
 
+	/*
+	 * Vietname with tone marks characters.
+	 * 
+	 * Các từ tiếng Việt có dấu.
+	 * /
     	private $vnmToneChars=array("à","á","ạ","ả","ã","â","ầ","ấ","ậ","ẩ","ẫ","ă","ằ","ắ","ặ","ẳ","ẵ",
                                 "è","é","ẹ","ẻ","ẽ","ê","ề","ế","ệ","ể","ễ","ì","í","ị","ỉ","ĩ",
                                 "ò","ó","ọ","ỏ","õ","ô","ồ","ố","ộ","ổ","ỗ","ơ","ờ","ớ","ợ","ở","ỡ",
@@ -65,7 +89,11 @@ class SlugHelper {
                                 "Ù","Ú","Ụ","Ủ","Ũ","Ư","Ừ","Ứ","Ự","Ử","Ữ",
                                 "Ỳ","Ý","Ỵ","Ỷ","Ỹ",
                                 "Đ","ê","ù","à");
-
+	/*
+	 * Vietname without tone marks characters.
+	 * 
+	 * Các từ tiếng Việt không dấu.
+	 * /
     	private $vnmNoTone=array("a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a",
                                 "e","e","e","e","e","e","e","e","e","e","e",
                                 "i","i","i","i","i",
@@ -121,7 +149,7 @@ class SlugHelper {
 		 */
 		$counter = $this->getSlugCounter($slug);
 		if ($slug_counter > 0) {
-			$slug .= $slug_counter;
+			$slug .= $this->separator . $slug_counter;
 		}
 		
         	return $slug;
@@ -143,14 +171,29 @@ class SlugHelper {
     	private function getSlugCounter ($slug) {
 		$slug_counter = 0;
         	if ($this->use_cache) {
+        		/*
+        		 * Find counter of slug in the Cache
+        		 * 
+        		 * Lấy ra số lượng slug cùng tên được lưu trữ trong bộ nhớ đệm (Cache)
+        		 * /
             		$slug_counter = Cache::tags($this->cache_key)->get($slug);
             		if ($slug_counter !== null) {
 				$slug_counter ++;
             		}
 			Cache::tags($this->cache_key)->put($slug, $slug_counter, $use_cache);
         	} else {
+        		/*
+        		 * Find all records which contains current slug
+        		 * 
+        		 * Lấy toàn bộ bản ghi có chưa slug đang cần tìm
+        		 * /
 			$list = DB::table($this->model)->where($this->slug_field, 'LIKE', $slug.'%')
 					->lists($this->slug_field, $this->id_field);
+			/*
+			 * Find the maximum counter in list of records.
+			 *
+			 * Lấy ra mã gắn lớn nhất cho slug
+			 */
 			if (!empty($list) && in_array($slug, $list) &&
 				(!$this->id ||
 				!array_key_exists($this->id, $list) || $list[$this->id] !== $slug)) {
