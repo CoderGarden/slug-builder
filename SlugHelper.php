@@ -120,7 +120,7 @@ class SlugHelper {
 		 * Tạo mã duy nhất cho Slug
 		 */
 		$counter = $this->getSlugCounter($slug);
-		if (!empty($slug_counter)) {
+		if ($slug_counter > 0) {
 			$slug .= $slug_counter;
 		}
 		
@@ -154,8 +154,6 @@ class SlugHelper {
 			if (!empty($list) && in_array($slug, $list) &&
 				(!$this->id ||
 				!array_key_exists($this->id, $list) || $list[$this->id] !== $slug)) {
-
-				$slug_counter = 1;
 				$len = strlen($slug . $this->separator);
 				foreach ($list as $slug_index) {
 					$slug_index = intval(substr($slug_index, $len));
@@ -163,6 +161,7 @@ class SlugHelper {
 						$slug_counter = $slug_index;
 					}
 				}
+				$slug_counter ++;
 			}
 		}
 		
