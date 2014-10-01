@@ -1,26 +1,26 @@
 <?php
 /**
- *	The MIT License (MIT)
+ * The MIT License (MIT)
  *
- *	Copyright (c) 2014 CoderGarden
+ * Copyright (c) 2014 CoderGarden
  *
- *	Permission is hereby granted, free of charge, to any person obtaining a copy
- *	of this software and associated documentation files (the "Software"), to deal
- *	in the Software without restriction, including without limitation the rights
- *	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *	copies of the Software, and to permit persons to whom the Software is
- *	furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- *	The above copyright notice and this permission notice shall be included in all
- *	copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- *	SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 class SlugHelper {
@@ -42,6 +42,7 @@ class SlugHelper {
 	 * Sử dụng bộ nhớ đệm để quản lý số lượng các slug có tên giống nhau.
 	*/
     private $use_cache = false;
+	private $cache_key = "SLUG_KEY";
 	
 	
     public $model = YOUR_TABLE_NAME;
@@ -64,6 +65,7 @@ class SlugHelper {
                                 "Ù","Ú","Ụ","Ủ","Ũ","Ư","Ừ","Ứ","Ự","Ử","Ữ",
                                 "Ỳ","Ý","Ỵ","Ỷ","Ỹ",
                                 "Đ","ê","ù","à");
+
     private $vnmNoTone=array("a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a",
                                 "e","e","e","e","e","e","e","e","e","e","e",
                                 "i","i","i","i","i",
@@ -82,71 +84,104 @@ class SlugHelper {
                                 "Y","Y","Y","Y","Y",
                                 "D","e","u","a");
 
-    public function __construct($separator = "_", $max_length = null, $use_cache = false) {
+    public function __construct($separator = "_", $max_length = null, $use_cache = false, $cache_key = "SLUG_KEY") {
 		$this->separator = $separator;
 		$this->max_length = $max_length;
 		$this->use_cache = $use_cache;
+		$this->cache_key = $cache_key;
     }
 
+	/**
+	 * Except all Vietnamese tone marks by 
+	 * replacing the relative English words.
+	 * 
+	 * Loại bỏ dấu cho tiếng Việt.
+	 *
+	 * (c) 2014 CoderGarden
+	 */
     private function exceptVnmToneMarks($source) {
         return str_replace($this->vnmToneChars, $this->vnmNoTone, $source);
     }
 
+	/**
+	 * Generate an unique Slug.
+	 *
+	 * Sinh một Slug duy nhất.
+	 *
+	 * (c) 2014 CoderGarden
+	 */
     private function generateSlug($source) {
         $slug = Str::slug($source, $this->separator);
         if ($this->max_length) {
             $slug = substr($slug, 0, $this->max_length);
         }
+		/* 
+		 * Make slug unique.
+		 * Tạo mã duy nhất cho Slug
+		 */
+		$counter = $this->getSlugCounter($slug);
+		if (!empty($slug_counter)) {
+			$slug .= $slug_counter;
+		}
+		
         return $slug;
     }
 
-    private function makeSlugUnique($slug) {
+	/**
+	 * Get number of slug with the same name.
+	 *
+	 * Tìm số Slug có trùng tên.
+	 *
+	 * Note: This code is implemented with Laravel.
+	 * You can change this for your specific environment.
+	 *
+	 * Chú ý: Đoạn mã này thực hiện với Laravel.
+	 * Bạn có thể tự chỉnh sửa đoạn này cho phù hợp.
+	 *
+	 * (c) 2014 CoderGarden
+	 */
+    private function getSlugCounter ($slug) {
+		$slug_counter = 0;
         if ($this->use_cache) {
-            $increment = Cache::tags('sluggable')->get($slug);
-            if ( $increment === null ) {
-                Cache::tags('sluggable')->put($slug, 0, $use_cache);
+            $slug_counter = Cache::tags($this->cache_key)->get($slug);
+            if ($slug_counter === null) {
+				$slug_counter = 0;
             } else {
-                Cache::tags('sluggable')->put($slug, ++$increment, $use_cache);
-                $slug .= $this->separator . $increment;
+				$slug_counter ++;                
             }
-            return $slug;
-        }
+			Cache::tags($this->cache_key)->put($slug, $slug_counter, $use_cache);
+        } else {
+			$list = DB::table($this->model)->where($this->slug_field, 'LIKE', $slug.'%')
+												->lists($this->slug_field, $this->id_field);
+			if (!empty($list) && in_array($slug, $list) &&
+				(!$this->id ||
+				!array_key_exists($this->id, $list) || $list[$this->id] !== $slug)) {
+				$slug_counter = 1;
+				$len = strlen($slug . $this->separator);
+				foreach ($list as $slug_index) {
+					$slug_index = intval(substr($slug_index, $len));
+					if ($slug_index > $slug_counter) {
+						$slug_counter = $slug_index;
+					}
+				}
+			}
+		}
 		
-        $list = $this->getExistingSlugs($slug);
-        if (empty($list) || !in_array($slug, $list) ||
-            ($this->id && array_key_exists($this->id, $list) && $list[$this->id] === $slug)) {
-            return $slug;
-        }
-		
-		$slug .= $this->separator;
-        $len = strlen($slug);
-        array_walk($list, function(&$value, $key) use ($len) {
-            $value = intval(substr($value, $len));
-        });
-        rsort($list);
-        $increment = reset($list) + 1;
-
-        return $slug . $increment;
+        return $slug_counter;
     }
 
 	/**
-	 * Get list of existing slugs in your DB.
-	 * This code is implemented with Laravel.
-	 * You can change this for your specific environment.
+	 * Generate Slug for Vietnamese and English.
+	 *
+	 * Tạo Slug cho tiếng Việt và tiếng Anh.
+	 * 
+	 * (c) 2014 CoderGarden
 	 */
-    private function getExistingSlugs($slug) {
-        $query = DB::table($this->model)->where($this->slug_field, 'LIKE', $slug.'%')
-											->lists($this->slug_field, $this->id_field);
-        return $list;
-    }
-
     public function sluggify($source) {
         // except vietnamese tone marks
         $source  = $this->exceptVnmToneMarks($source);
         // convert into slug
         $slug = $this->generateSlug($source);
-        // unique
-        $slug = $this->makeSlugUnique($slug);
 
         return $slug;
     }
