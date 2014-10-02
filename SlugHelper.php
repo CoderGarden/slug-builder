@@ -175,7 +175,7 @@ class SlugHelper {
         		 * Find counter of slug in the Cache
         		 * 
         		 * Lấy ra số lượng slug cùng tên được lưu trữ trong bộ nhớ đệm (Cache)
-        		 * /
+        		 */
             		$slug_counter = Cache::tags($this->cache_key)->get($slug);
             		if ($slug_counter !== null) {
 				$slug_counter ++;
@@ -186,7 +186,7 @@ class SlugHelper {
         		 * Find all records which contains current slug
         		 * 
         		 * Lấy toàn bộ bản ghi có chưa slug đang cần tìm
-        		 * /
+        		 */
 			$list = DB::table($this->model)->where($this->slug_field, 'LIKE', $slug.'%')
 					->lists($this->slug_field, $this->id_field);
 			/*
