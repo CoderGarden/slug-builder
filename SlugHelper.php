@@ -48,32 +48,32 @@ class SlugHelper {
 	 * The related model (table in DB) which holds slug fields.
 	 * 
 	 * Model (bảng dữ liệu trong DB) có lưu trữ slug
-	 * /
+	 */
     	public $model = YOUR_TABLE_NAME;
 	/*
 	 * The related id field of model.
 	 * 
 	 * Tên của trường id (định danh cho các bản ghi) của model.
-	 * /
+	 */
     	public $id_field = "id";
 	/*
 	 * The related slug field of model.
 	 * 
 	 * Tên của trường slug (trường lưu trữ slug) của model.
-	 * /
+	 */
     	public $slug_field = "slug";
     	/*
 	 * Id of existing model.
 	 * 
 	 * Id của bản ghi đang lưu trữ slug.
-	 * /
+	 */
     	public $id = false;
 
 	/*
 	 * Vietname with tone marks characters.
 	 * 
 	 * Các từ tiếng Việt có dấu.
-	 * /
+	 */
     	private $vnmToneChars=array("à","á","ạ","ả","ã","â","ầ","ấ","ậ","ẩ","ẫ","ă","ằ","ắ","ặ","ẳ","ẵ",
                                 "è","é","ẹ","ẻ","ẽ","ê","ề","ế","ệ","ể","ễ","ì","í","ị","ỉ","ĩ",
                                 "ò","ó","ọ","ỏ","õ","ô","ồ","ố","ộ","ổ","ỗ","ơ","ờ","ớ","ợ","ở","ỡ",
@@ -93,7 +93,7 @@ class SlugHelper {
 	 * Vietname without tone marks characters.
 	 * 
 	 * Các từ tiếng Việt không dấu.
-	 * /
+	 */
     	private $vnmNoTone=array("a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a",
                                 "e","e","e","e","e","e","e","e","e","e","e",
                                 "i","i","i","i","i",
